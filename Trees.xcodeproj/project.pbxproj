@@ -18,7 +18,9 @@
 		888954688A149008E504D9AE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C1ACE2EC8B178140D135E /* SettingsView.swift */; };
 		96E65B5F93FBEAF26A64666A /* GitServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CB6CA84E47DFF46F2D3E44 /* GitServiceTests.swift */; };
 		9A5889B04F1AA99705144D3A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D622F80312FFD765AB887763 /* Assets.xcassets */; };
+		9BA3E0FAD7EE1B370BB53E2B /* WorktreeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7752CFFD34FBB60AC362131B /* WorktreeTests.swift */; };
 		A533B9CC5496D9D7FAD1D058 /* TerminalServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89154277EE5D1FB616A92FC1 /* TerminalServiceProtocol.swift */; };
+		A78F692C50079EE3DBB15221 /* Worktree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2E8F97FD341B9F754E1E2 /* Worktree.swift */; };
 		B46177DAD0102F1199797B3E /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E00519F09FF204CBE4B562B /* AppState.swift */; };
 		CC9A4A1C08696715475DB84F /* FileServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF4DFE5127316570A6559F1 /* FileServiceTests.swift */; };
 		DACBFC35C41B82BF559BDE89 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25052ABFD61CDA89C39F4AFF /* SettingsService.swift */; };
@@ -44,6 +46,7 @@
 		0048C078B642B3DCDE432E6C /* MockFileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFileService.swift; sourceTree = "<group>"; };
 		01BBAD8339CADB7344C58F23 /* RepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryTests.swift; sourceTree = "<group>"; };
 		0D8860CCBCAA3DDDB78A3D81 /* MockTerminalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTerminalService.swift; sourceTree = "<group>"; };
+		1AE2E8F97FD341B9F754E1E2 /* Worktree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Worktree.swift; sourceTree = "<group>"; };
 		25052ABFD61CDA89C39F4AFF /* SettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsService.swift; sourceTree = "<group>"; };
 		2E00519F09FF204CBE4B562B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		33C4FE39D6062E6BC305E239 /* FileServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileServiceProtocol.swift; sourceTree = "<group>"; };
@@ -52,6 +55,7 @@
 		5C0DF9FF3F0FF9F0E8BAAFB5 /* MockGitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGitService.swift; sourceTree = "<group>"; };
 		65D8B89CBCC914E20218A33A /* TreesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TreesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D33D55180B4FEFAA30C2E92 /* GitServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitServiceProtocol.swift; sourceTree = "<group>"; };
+		7752CFFD34FBB60AC362131B /* WorktreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorktreeTests.swift; sourceTree = "<group>"; };
 		80255C21B64631B79273D06E /* TerminalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalService.swift; sourceTree = "<group>"; };
 		817793E263FCDD0C5A146B35 /* TreesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreesApp.swift; sourceTree = "<group>"; };
 		82428564CDACA0D26949FB86 /* GitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitService.swift; sourceTree = "<group>"; };
@@ -124,6 +128,7 @@
 			isa = PBXGroup;
 			children = (
 				01BBAD8339CADB7344C58F23 /* RepositoryTests.swift */,
+				7752CFFD34FBB60AC362131B /* WorktreeTests.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -133,6 +138,7 @@
 			children = (
 				2E00519F09FF204CBE4B562B /* AppState.swift */,
 				E03BF622DEE5BA5F110DC51E /* Repository.swift */,
+				1AE2E8F97FD341B9F754E1E2 /* Worktree.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -272,6 +278,7 @@
 				3A114A806DF5D157C4F48257 /* RepositoryTests.swift in Sources */,
 				822FD286AAFF9459509D5904 /* SettingsServiceTests.swift in Sources */,
 				0BE85806B6E1CA12C8A22067 /* TerminalServiceTests.swift in Sources */,
+				9BA3E0FAD7EE1B370BB53E2B /* WorktreeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,6 +298,7 @@
 				7C2710F3927382501063D4FA /* TerminalService.swift in Sources */,
 				A533B9CC5496D9D7FAD1D058 /* TerminalServiceProtocol.swift in Sources */,
 				3FF5120BAA7CD44DA7A781F6 /* TreesApp.swift in Sources */,
+				A78F692C50079EE3DBB15221 /* Worktree.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -35,4 +35,10 @@ protocol GitServiceProtocol {
     /// - Returns: URL to the created worktree directory
     /// - Throws: GitError if worktree creation fails
     func createWorktree(at repoPath: URL, featureName: String) async throws -> URL
+
+    /// Lists all worktrees for a repository
+    /// - Parameter repoPath: Path to the git repository
+    /// - Returns: Array of Worktree objects
+    /// - Throws: GitError if listing fails
+    func listWorktrees(at repoPath: URL) async throws -> [Worktree]
 }

@@ -64,6 +64,67 @@ final class GitService: GitServiceProtocol {
             .appendingPathComponent(featureName)
     }
 
+    func listWorktrees(at repoPath: URL) async throws -> [Worktree] {
+        let result = try await runGitCommand(
+            ["worktree", "list"],
+            in: repoPath
+        )
+
+        if result.exitCode != 0 {
+            throw GitError.notAGitRepository
+        }
+
+        // Parse output like:
+        // /path/to/repo  abc1234 [main]
+        // /path/to/worktree  def5678 [feature]
+        var worktrees: [Worktree] = []
+        let lines = result.stdout.components(separatedBy: "\n")
+        var isFirst = true
+
+        for line in lines {
+            guard !line.isEmpty else { continue }
+
+            // Extract path (everything before the first space followed by a hash)
+            // Extract branch name from [branchname]
+            if let bracketRange = line.range(of: "\\[([^\\]]+)\\]", options: .regularExpression) {
+                let branchWithBrackets = String(line[bracketRange])
+                let branch = String(branchWithBrackets.dropFirst().dropLast())
+
+                // Path is everything up to the commit hash (7+ hex chars)
+                let pathPart = line.prefix(while: { char in
+                    // Stop when we hit whitespace followed by what looks like a hash
+                    true
+                })
+
+                // Find the path by looking for the first whitespace followed by hex
+                var pathString = ""
+                var foundHash = false
+                var i = line.startIndex
+                while i < line.endIndex {
+                    let remaining = String(line[i...])
+                    if remaining.hasPrefix(" ") && remaining.count > 8 {
+                        let afterSpace = remaining.dropFirst()
+                        if afterSpace.prefix(7).allSatisfy({ $0.isHexDigit }) {
+                            foundHash = true
+                            break
+                        }
+                    }
+                    pathString.append(line[i])
+                    i = line.index(after: i)
+                }
+
+                if foundHash {
+                    let path = URL(fileURLWithPath: pathString.trimmingCharacters(in: .whitespaces))
+                    let worktree = Worktree(path: path, branch: branch, isMain: isFirst)
+                    worktrees.append(worktree)
+                }
+            }
+            isFirst = false
+        }
+
+        return worktrees
+    }
+
     // MARK: - Private
 
     private struct CommandResult {

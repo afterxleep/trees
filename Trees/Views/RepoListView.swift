@@ -19,6 +19,24 @@ struct RepoMenuView: View {
                     Button("Open in Terminal") {
                         appState.openInTerminal(repo)
                     }
+
+                    let repoWorktrees = appState.worktreesForRepo(repo)
+                    if !repoWorktrees.isEmpty {
+                        Divider()
+                        Menu("Worktrees (\(repoWorktrees.count))") {
+                            ForEach(repoWorktrees) { worktree in
+                                Menu(worktree.name) {
+                                    Button("Open in Finder") {
+                                        appState.openWorktreeInFinder(worktree)
+                                    }
+                                    Button("Open in Terminal") {
+                                        appState.openWorktreeInTerminal(worktree)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Divider()
                     Button("Create Worktree...") {
                         appState.selectedRepository = repo

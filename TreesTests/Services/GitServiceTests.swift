@@ -184,4 +184,72 @@ final class GitServiceTests: XCTestCase {
             XCTFail("Wrong error type: \(error)")
         }
     }
+
+    // MARK: - List Worktrees Tests
+
+    func testListWorktrees_returnsMainWorktreeForNewRepo() async throws {
+        let repoPath = createGitRepo(named: "newrepo")
+
+        let worktrees = try await sut.listWorktrees(at: repoPath)
+
+        XCTAssertEqual(worktrees.count, 1)
+        XCTAssertTrue(worktrees[0].isMain)
+        XCTAssertEqual(worktrees[0].branch, "main")
+    }
+
+    func testListWorktrees_returnsAllWorktrees() async throws {
+        let repoPath = createGitRepo(named: "multitree")
+
+        // Create a worktree
+        _ = try await sut.createWorktree(at: repoPath, featureName: "feature-one")
+
+        let worktrees = try await sut.listWorktrees(at: repoPath)
+
+        XCTAssertEqual(worktrees.count, 2)
+
+        let branches = worktrees.map { $0.branch }
+        XCTAssertTrue(branches.contains("main"))
+        XCTAssertTrue(branches.contains("feature-one"))
+    }
+
+    func testListWorktrees_returnsCorrectPaths() async throws {
+        let repoPath = createGitRepo(named: "pathtest")
+
+        _ = try await sut.createWorktree(at: repoPath, featureName: "my-feature")
+
+        let worktrees = try await sut.listWorktrees(at: repoPath)
+
+        let featureWorktree = worktrees.first { $0.branch == "my-feature" }
+        XCTAssertNotNil(featureWorktree)
+
+        let expectedPath = testDirectory.appendingPathComponent("pathtest.worktrees/my-feature")
+        XCTAssertEqual(featureWorktree?.path.standardizedFileURL, expectedPath.standardizedFileURL)
+    }
+
+    func testListWorktrees_identifiesMainWorktree() async throws {
+        let repoPath = createGitRepo(named: "maintest")
+
+        _ = try await sut.createWorktree(at: repoPath, featureName: "feature")
+
+        let worktrees = try await sut.listWorktrees(at: repoPath)
+
+        let mainWorktree = worktrees.first { $0.isMain }
+        let featureWorktree = worktrees.first { !$0.isMain }
+
+        XCTAssertNotNil(mainWorktree)
+        XCTAssertNotNil(featureWorktree)
+        XCTAssertEqual(mainWorktree?.path.standardizedFileURL, repoPath.standardizedFileURL)
+    }
+
+    func testListWorktrees_throwsErrorForNonGitRepo() async {
+        let nonGitPath = testDirectory.appendingPathComponent("not-git")
+        try? FileManager.default.createDirectory(at: nonGitPath, withIntermediateDirectories: true)
+
+        do {
+            _ = try await sut.listWorktrees(at: nonGitPath)
+            XCTFail("Expected error for non-git repo")
+        } catch {
+            // Expected
+        }
+    }
 }

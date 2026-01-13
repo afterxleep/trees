@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class AppState: ObservableObject {
     @Published var repositories: [Repository] = []
+    @Published var worktrees: [UUID: [Worktree]] = [:]
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -43,7 +44,38 @@ final class AppState: ObservableObject {
     func loadRepositories() {
         isLoading = true
         repositories = fileService.scanRepositories(in: settings.developerPathURL)
-        isLoading = false
+
+        // Load worktrees for each repository
+        Task {
+            for repo in repositories {
+                if let repoWorktrees = try? await gitService.listWorktrees(at: repo.path) {
+                    // Filter out the main worktree
+                    let nonMainWorktrees = repoWorktrees.filter { !$0.isMain }
+                    if !nonMainWorktrees.isEmpty {
+                        worktrees[repo.id] = nonMainWorktrees
+                    } else {
+                        worktrees.removeValue(forKey: repo.id)
+                    }
+                }
+            }
+            isLoading = false
+        }
+    }
+
+    func worktreesForRepo(_ repo: Repository) -> [Worktree] {
+        worktrees[repo.id] ?? []
+    }
+
+    func openWorktreeInFinder(_ worktree: Worktree) {
+        fileService.openInFinder(worktree.path)
+    }
+
+    func openWorktreeInTerminal(_ worktree: Worktree) {
+        try? terminalService.openTerminal(
+            at: worktree.path,
+            command: "",
+            using: settings.terminalApp
+        )
     }
 
     func openInFinder(_ repository: Repository) {
