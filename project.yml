@@ -1,0 +1,58 @@
+name: Trees
+options:
+  bundleIdPrefix: com.afterxleep
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  Trees:
+    type: application
+    platform: macOS
+    sources:
+      - Trees
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.afterxleep.trees
+        INFOPLIST_FILE: Trees/Info.plist
+        PRODUCT_NAME: Trees
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Trees/Trees.entitlements
+    entitlements:
+      path: Trees/Trees.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.files.user-selected.read-write: true
+
+  TreesTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - TreesTests
+    dependencies:
+      - target: Trees
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.afterxleep.trees.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Trees.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Trees"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+schemes:
+  Trees:
+    build:
+      targets:
+        Trees: all
+        TreesTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - TreesTests

@@ -1,0 +1,26 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+xcuserdata/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# SPM
+.swiftpm/
+.build/
+Package.resolved
+
+# FlowDeck
+.flowdeck/
