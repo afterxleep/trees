@@ -34,9 +34,8 @@ final class FileService: FileServiceProtocol {
 
     func isGitRepository(_ directory: URL) -> Bool {
         let gitPath = directory.appendingPathComponent(".git")
-        var isDirectory: ObjCBool = false
-        return fileManager.fileExists(atPath: gitPath.path, isDirectory: &isDirectory)
-            && isDirectory.boolValue
+        // .git can be a directory (normal repo) or a file (worktree/submodule)
+        return fileManager.fileExists(atPath: gitPath.path)
     }
 
     func openInFinder(_ directory: URL) {
