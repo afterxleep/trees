@@ -12,7 +12,7 @@ struct TreesApp: App {
         MenuBarExtra("Trees", systemImage: "tree") {
             RepoMenuView(appState: appState)
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
 
         Window("Settings", id: "settings") {
             SettingsView(settings: appState.settings)
