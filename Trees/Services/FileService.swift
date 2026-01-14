@@ -23,8 +23,12 @@ final class FileService: FileServiceProtocol {
             )
 
             return contents
-                .filter { isValidRepository($0) }
-                .map { Repository(name: $0.lastPathComponent, path: $0) }
+                .filter { isValidDirectory($0) }
+                .map { Repository(
+                    name: $0.lastPathComponent,
+                    path: $0,
+                    isGitRepository: isGitRepository($0)
+                )}
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
         } catch {
@@ -44,7 +48,7 @@ final class FileService: FileServiceProtocol {
 
     // MARK: - Private
 
-    private func isValidRepository(_ url: URL) -> Bool {
+    private func isValidDirectory(_ url: URL) -> Bool {
         // Must be a directory
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory),
@@ -59,7 +63,6 @@ final class FileService: FileServiceProtocol {
             return false
         }
 
-        // Must be a git repository
-        return isGitRepository(url)
+        return true
     }
 }

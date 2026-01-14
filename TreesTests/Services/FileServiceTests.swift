@@ -68,16 +68,29 @@ final class FileServiceTests: XCTestCase {
 
     // MARK: - scanRepositories Tests
 
-    func testScanRepositories_findsGitRepos() {
+    func testScanRepositories_findsAllDirectories() {
         createDirectory("project1", isGitRepo: true)
         createDirectory("project2", isGitRepo: true)
         createDirectory("not-a-repo", isGitRepo: false)
 
         let repos = sut.scanRepositories(in: testDirectory)
 
-        XCTAssertEqual(repos.count, 2)
+        XCTAssertEqual(repos.count, 3)
         let names = repos.map { $0.name }.sorted()
-        XCTAssertEqual(names, ["project1", "project2"])
+        XCTAssertEqual(names, ["not-a-repo", "project1", "project2"])
+    }
+
+    func testScanRepositories_marksGitReposCorrectly() {
+        createDirectory("git-project", isGitRepo: true)
+        createDirectory("regular-folder", isGitRepo: false)
+
+        let repos = sut.scanRepositories(in: testDirectory)
+
+        let gitProject = repos.first { $0.name == "git-project" }
+        let regularFolder = repos.first { $0.name == "regular-folder" }
+
+        XCTAssertTrue(gitProject?.isGitRepository ?? false)
+        XCTAssertFalse(regularFolder?.isGitRepository ?? true)
     }
 
     func testScanRepositories_excludesWorktreesFolders() {

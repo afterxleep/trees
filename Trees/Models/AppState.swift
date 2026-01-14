@@ -45,9 +45,9 @@ final class AppState: ObservableObject {
         isLoading = true
         repositories = fileService.scanRepositories(in: settings.developerPathURL)
 
-        // Load worktrees for each repository
+        // Load worktrees for git repositories only
         Task {
-            for repo in repositories {
+            for repo in repositories where repo.isGitRepository {
                 if let repoWorktrees = try? await gitService.listWorktrees(at: repo.path) {
                     // Filter out the main worktree
                     let nonMainWorktrees = repoWorktrees.filter { !$0.isMain }

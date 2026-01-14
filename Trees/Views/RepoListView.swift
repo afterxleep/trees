@@ -20,27 +20,29 @@ struct RepoMenuView: View {
                         appState.openInTerminal(repo)
                     }
 
-                    let repoWorktrees = appState.worktreesForRepo(repo)
-                    if !repoWorktrees.isEmpty {
-                        Divider()
-                        Menu("Worktrees (\(repoWorktrees.count))") {
-                            ForEach(repoWorktrees) { worktree in
-                                Menu(worktree.name) {
-                                    Button("Open in Finder") {
-                                        appState.openWorktreeInFinder(worktree)
-                                    }
-                                    Button("Open in Terminal") {
-                                        appState.openWorktreeInTerminal(worktree)
+                    if repo.isGitRepository {
+                        let repoWorktrees = appState.worktreesForRepo(repo)
+                        if !repoWorktrees.isEmpty {
+                            Divider()
+                            Menu("Worktrees (\(repoWorktrees.count))") {
+                                ForEach(repoWorktrees) { worktree in
+                                    Menu(worktree.name) {
+                                        Button("Open in Finder") {
+                                            appState.openWorktreeInFinder(worktree)
+                                        }
+                                        Button("Open in Terminal") {
+                                            appState.openWorktreeInTerminal(worktree)
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    Divider()
-                    Button("Create Worktree...") {
-                        appState.selectedRepository = repo
-                        openWindow(id: "worktree")
+                        Divider()
+                        Button("Create Worktree...") {
+                            appState.selectedRepository = repo
+                            openWindow(id: "worktree")
+                        }
                     }
                 }
             }
