@@ -24,3 +24,6 @@ Package.resolved
 
 # FlowDeck
 .flowdeck/
+
+# Local notarization helpers
+scripts/setup-notarization.local.sh
