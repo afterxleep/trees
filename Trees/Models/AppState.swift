@@ -123,6 +123,11 @@ final class AppState: ObservableObject {
         defer { isCreatingWorktree = false }
         errorMessage = nil
 
+        guard repository.isGitRepository else {
+            handleError(GitError.notAGitRepository)
+            return false
+        }
+
         let trimmedFeature = featureName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedFeature.isEmpty else {
             handleError(GitError.worktreeCreationFailed("Feature name cannot be empty."))

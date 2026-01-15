@@ -252,4 +252,119 @@ final class GitServiceTests: XCTestCase {
             // Expected
         }
     }
+
+    // MARK: - Pull Error Parsing Tests
+
+    func testParsePullError_detectsLocalChanges() {
+        let stderr = """
+        error: Your local changes to the following files would be overwritten by merge:
+        \tPackage.resolved
+        \tproject.pbxproj
+        Please commit your changes or stash them before you merge.
+        Aborting
+        """
+
+        let error = sut.parsePullError(stderr)
+
+        guard case .pullBlockedByLocalChanges(let files) = error else {
+            XCTFail("Expected local changes error")
+            return
+        }
+        XCTAssertEqual(files, ["Package.resolved", "project.pbxproj"])
+    }
+
+    func testParsePullError_detectsAuthFailure() {
+        let stderr = "fatal: Authentication failed for 'https://github.com/example/repo.git'"
+
+        let error = sut.parsePullError(stderr)
+
+        guard case .pullAuthFailed = error else {
+            XCTFail("Expected auth failure error")
+            return
+        }
+    }
+
+    func testParsePullError_detectsRemoteNotFound() {
+        let stderr = """
+        remote: Repository not found.
+        fatal: repository 'https://github.com/example/missing.git/' not found
+        """
+
+        let error = sut.parsePullError(stderr)
+
+        guard case .pullRemoteNotFound = error else {
+            XCTFail("Expected remote not found error")
+            return
+        }
+    }
+
+    func testParsePullError_detectsNetworkError() {
+        let stderr = "fatal: unable to access 'https://github.com/example/repo/': Could not resolve host: github.com"
+
+        let error = sut.parsePullError(stderr)
+
+        guard case .pullNetworkError = error else {
+            XCTFail("Expected network error")
+            return
+        }
+    }
+
+    func testParsePullError_detectsMergeConflicts() {
+        let stderr = """
+        CONFLICT (content): Merge conflict in Sources/App.swift
+        Automatic merge failed; fix conflicts and then commit the result.
+        """
+
+        let error = sut.parsePullError(stderr)
+
+        guard case .pullConflicts(let files) = error else {
+            XCTFail("Expected merge conflict error")
+            return
+        }
+        XCTAssertEqual(files, ["Sources/App.swift"])
+    }
+
+    func testParsePullError_detectsMissingRemoteBranch() {
+        let stderr = "fatal: couldn't find remote ref main"
+
+        let error = sut.parsePullError(stderr)
+
+        guard case .pullBranchNotFound(let branch) = error else {
+            XCTFail("Expected missing branch error")
+            return
+        }
+        XCTAssertEqual(branch, "main")
+    }
+
+    func testParseWorktreeError_detectsInvalidBranchName() {
+        let stderr = "fatal: 'bad branch' is not a valid branch name."
+
+        let error = sut.parseWorktreeError(
+            stderr,
+            featureName: "bad branch",
+            baseBranch: "main"
+        )
+
+        guard case .invalidBranchName(let branch) = error else {
+            XCTFail("Expected invalid branch name error")
+            return
+        }
+        XCTAssertEqual(branch, "bad branch")
+    }
+
+    func testParseWorktreeError_detectsMissingBaseBranch() {
+        let stderr = "fatal: invalid reference: main"
+
+        let error = sut.parseWorktreeError(
+            stderr,
+            featureName: "feature",
+            baseBranch: "main"
+        )
+
+        guard case .baseBranchNotFound(let branch) = error else {
+            XCTFail("Expected base branch not found error")
+            return
+        }
+        XCTAssertEqual(branch, "main")
+    }
 }

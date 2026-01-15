@@ -48,7 +48,7 @@ final class FileService: FileServiceProtocol, @unchecked Sendable {
 
     func copyToClipboard(_ url: URL) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        NSPasteboard.general.setString(url.path, forType: .string)
     }
 
     // MARK: - Private

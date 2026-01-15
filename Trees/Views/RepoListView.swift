@@ -124,103 +124,284 @@ struct RepoMenuView: View {
 struct RepoRowView: View {
     let repo: Repository
     @ObservedObject var appState: AppState
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
     @State private var isHovering = false
+    @State private var isExpanded = false
+    @State private var showDetails = false
+    @State private var expandTask: DispatchWorkItem?
+    @State private var newWorktreeName = ""
+    @State private var showCreateField = false
+    @FocusState private var isCreateFieldFocused: Bool
+    private let actionIconSize: CGFloat = 14
+
+    private var actionIconFont: Font {
+        .system(size: actionIconSize, weight: .regular)
+    }
+
+    private func actionSymbol(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(actionIconFont)
+            .frame(height: actionIconSize)
+    }
+
+    private func submitCreateWorktree() {
+        let featureName = newWorktreeName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !featureName.isEmpty else { return }
+        Task {
+            let success = await appState.createWorktree(
+                for: repo,
+                featureName: featureName
+            )
+            if success {
+                newWorktreeName = ""
+                showCreateField = false
+            }
+        }
+    }
+
+    var body: some View {
+        let repoWorktrees = appState.worktreesForRepo(repo)
+        let canExpand = repo.isGitRepository
+        let toggleExpand = {
+            guard canExpand else { return }
+
+            if isExpanded {
+                expandTask?.cancel()
+                showDetails = false
+                showCreateField = false
+                newWorktreeName = ""
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded = false
+                }
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded = true
+                }
+
+                expandTask?.cancel()
+                let task = DispatchWorkItem {
+                    guard isExpanded else { return }
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        showDetails = true
+                    }
+                }
+                expandTask = task
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: task)
+            }
+        }
+
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                if repo.isGitRepository {
+                    Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Image(systemName: "folder")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(repo.name)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+
+                Spacer()
+
+                if isHovering {
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            appState.openInFinder(repo)
+                            dismiss()
+                        }) {
+                            actionSymbol("folder")
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open in Finder")
+
+                        Button(action: {
+                            appState.openInTerminal(repo)
+                            dismiss()
+                        }) {
+                            actionSymbol("terminal")
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open in Terminal")
+                    }
+                }
+
+                if canExpand && isHovering {
+                    Button(action: {
+                        toggleExpand()
+                    }) {
+                        actionSymbol("chevron.down")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Worktrees")
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovering ? Color.primary.opacity(0.08) : Color.clear)
+            )
+            .padding(.horizontal, 5)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                toggleExpand()
+            }
+            .onHover { hovering in
+                isHovering = hovering
+            }
+
+            if canExpand, isExpanded {
+                VStack(spacing: 0) {
+                    if showCreateField {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+
+                        TextField("feature/my-branch", text: $newWorktreeName)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 11, weight: .medium))
+                            .disableAutocorrection(true)
+                            .lineLimit(1)
+                            .focused($isCreateFieldFocused)
+                            .onSubmit {
+                                submitCreateWorktree()
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(NSColor.textBackgroundColor))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.secondary.opacity(0.25), lineWidth: 1)
+                                )
+
+                            if appState.isCreatingWorktree {
+                                ProgressView()
+                                    .controlSize(.mini)
+                            } else {
+                                Button("Create") {
+                                    submitCreateWorktree()
+                                }
+                                .buttonStyle(.plain)
+                                .keyboardShortcut(.defaultAction)
+                                .disabled(newWorktreeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .frame(height: 26)
+                        .opacity(showDetails ? 1 : 0)
+                    } else {
+                        Button(action: {
+                            showCreateField = true
+                            DispatchQueue.main.async {
+                                isCreateFieldFocused = true
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+
+                                Text("Create Worktree...")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 24)
+                        .frame(height: 24)
+                        .opacity(showDetails ? 1 : 0)
+                    }
+
+                    Divider()
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 4)
+                        .opacity(showDetails ? 1 : 0)
+
+                    ForEach(repoWorktrees) { worktree in
+                        WorktreeRowView(worktree: worktree, appState: appState)
+                            .opacity(showDetails ? 1 : 0)
+                    }
+                }
+                .padding(.bottom, 6)
+                .transition(.move(edge: .top))
+            }
+        }
+    }
+}
+
+struct WorktreeRowView: View {
+    let worktree: Worktree
+    @ObservedObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State private var isHovering = false
+    private let actionIconSize: CGFloat = 12
+
+    private func actionSymbol(_ name: String) -> some View {
+        Image(systemName: name)
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(height: actionIconSize)
+    }
 
     var body: some View {
         HStack(spacing: 8) {
-            if repo.isGitRepository {
-                Image("MenuBarIcon")
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 11, height: 11)
-                    .foregroundStyle(.secondary)
-            } else {
-                Image(systemName: "folder")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
 
-            Text(repo.name)
-                .font(.system(size: 12, weight: .medium))
+            Text(worktree.name)
+                .font(.system(size: 11, weight: .medium))
                 .lineLimit(1)
 
             Spacer()
 
             if isHovering {
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     Button(action: {
-                        appState.openInFinder(repo)
+                        appState.openWorktreeInFinder(worktree)
                         dismiss()
                     }) {
-                        Image(systemName: "folder")
+                        actionSymbol("folder")
                     }
                     .buttonStyle(.plain)
                     .help("Open in Finder")
 
                     Button(action: {
-                        appState.openInTerminal(repo)
+                        appState.copyWorktreeURL(worktree)
                         dismiss()
                     }) {
-                        Image(systemName: "terminal")
+                        actionSymbol("doc.on.doc")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy Path")
+
+                    Button(action: {
+                        appState.openWorktreeInTerminal(worktree)
+                        dismiss()
+                    }) {
+                        actionSymbol("terminal")
                     }
                     .buttonStyle(.plain)
                     .help("Open in Terminal")
-
-                    Button(action: {
-                        appState.copyRepositoryURL(repo)
-                        dismiss()
-                    }) {
-                        Image(systemName: "doc.on.doc")
-                    }
-                    .buttonStyle(.plain)
-                    .help("Copy URL")
-
-                    if repo.isGitRepository {
-                        Menu {
-                            let repoWorktrees = appState.worktreesForRepo(repo)
-                            if !repoWorktrees.isEmpty {
-                                ForEach(repoWorktrees) { worktree in
-                                    Menu(worktree.name) {
-                                        Button("Copy URL") {
-                                            appState.copyWorktreeURL(worktree)
-                                            dismiss()
-                                        }
-                                        Button("Open in Finder") {
-                                            appState.openWorktreeInFinder(worktree)
-                                            dismiss()
-                                        }
-                                        Button("Open in Terminal") {
-                                            appState.openWorktreeInTerminal(worktree)
-                                            dismiss()
-                                        }
-                                    }
-                                }
-                                Divider()
-                            }
-                            Button("Create Worktree...") {
-                                appState.selectedRepository = repo
-                                NSApplication.shared.activate(ignoringOtherApps: true)
-                                openWindow(id: "worktree")
-                                dismiss()
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                        }
-                        .menuStyle(.borderlessButton)
-                        .frame(width: 20)
-                        .help("Git options")
-                    }
                 }
             }
         }
-        .padding(.horizontal, 10)
-        .frame(height: 28)
+        .padding(.horizontal, 24)
+        .frame(height: 24)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isHovering ? Color.primary.opacity(0.08) : Color.clear)
+                .fill(isHovering ? Color.primary.opacity(0.06) : Color.clear)
         )
         .padding(.horizontal, 5)
         .contentShape(Rectangle())
