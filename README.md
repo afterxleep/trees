@@ -2,6 +2,8 @@
 
 ![Trees menu bar app](screenshot.png)
 
+Latest download: https://github.com/afterxleep/trees/releases/latest
+
 Trees is a macOS menu bar app for browsing repositories and creating git worktrees inside your developer folder.
 
 ## Highlights
