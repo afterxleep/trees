@@ -15,4 +15,8 @@ protocol FileServiceProtocol: Sendable {
     /// Opens a directory in Finder
     /// - Parameter directory: The directory to open
     func openInFinder(_ directory: URL)
+
+    /// Copies a URL string to the clipboard
+    /// - Parameter url: The URL to copy
+    func copyToClipboard(_ url: URL)
 }

@@ -110,6 +110,14 @@ final class AppState: ObservableObject {
         }
     }
 
+    func copyRepositoryURL(_ repository: Repository) {
+        fileService.copyToClipboard(repository.path)
+    }
+
+    func copyWorktreeURL(_ worktree: Worktree) {
+        fileService.copyToClipboard(worktree.path)
+    }
+
     func createWorktree(for repository: Repository, featureName: String) async -> Bool {
         isCreatingWorktree = true
         defer { isCreatingWorktree = false }

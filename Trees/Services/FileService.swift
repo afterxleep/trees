@@ -46,6 +46,11 @@ final class FileService: FileServiceProtocol, @unchecked Sendable {
         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: directory.path)
     }
 
+    func copyToClipboard(_ url: URL) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+    }
+
     // MARK: - Private
 
     private func isValidDirectory(_ url: URL) -> Bool {

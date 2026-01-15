@@ -125,9 +125,18 @@ struct RepoRowView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: repo.isGitRepository ? "arrow.triangle.branch" : "folder")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+            if repo.isGitRepository {
+                Image("MenuBarIcon")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 11, height: 11)
+                    .foregroundStyle(.secondary)
+            } else {
+                Image(systemName: "folder")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
 
             Text(repo.name)
                 .font(.system(size: 12, weight: .medium))
@@ -155,12 +164,25 @@ struct RepoRowView: View {
                     .buttonStyle(.plain)
                     .help("Open in Terminal")
 
+                    Button(action: {
+                        appState.copyRepositoryURL(repo)
+                        dismiss()
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy URL")
+
                     if repo.isGitRepository {
                         Menu {
                             let repoWorktrees = appState.worktreesForRepo(repo)
                             if !repoWorktrees.isEmpty {
                                 ForEach(repoWorktrees) { worktree in
                                     Menu(worktree.name) {
+                                        Button("Copy URL") {
+                                            appState.copyWorktreeURL(worktree)
+                                            dismiss()
+                                        }
                                         Button("Open in Finder") {
                                             appState.openWorktreeInFinder(worktree)
                                             dismiss()

@@ -89,4 +89,21 @@ final class AppStateTests: XCTestCase {
             GitError.worktreeCreationFailed("Feature name cannot be empty.").localizedDescription
         )
     }
+
+    func testCopyRepositoryURL_usesFileService() {
+        let fileService = MockFileService()
+        let repoPath = URL(fileURLWithPath: "/Users/test/Developer/sample")
+        let repo = Repository(name: "sample", path: repoPath, isGitRepository: true)
+
+        let appState = AppState(
+            settings: MockSettingsService(),
+            fileService: fileService,
+            gitService: MockGitService(),
+            terminalService: MockTerminalService()
+        )
+
+        appState.copyRepositoryURL(repo)
+
+        XCTAssertEqual(fileService.copyToClipboardCalledWith, repoPath)
+    }
 }
