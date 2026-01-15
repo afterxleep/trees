@@ -17,6 +17,9 @@ APP_PATH="$EXPORT_PATH/Trees.app"
 #   --team-id "TEAMID" \
 #   --password "app-specific-password"
 
+SIGNING_IDENTITY="${SIGNING_IDENTITY:-Developer ID Application: Daniel Bernal (J9F8F3PWTV)}"
+TEAM_ID="${TEAM_ID:-J9F8F3PWTV}"
+
 VERSION=${1:-}
 if [[ -z "$VERSION" ]]; then
   echo "Usage: scripts/release.sh <version>" >&2
@@ -35,17 +38,33 @@ fi
 
 NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-FlowDeck-Notarize}"
 
+if ! command -v codesign >/dev/null 2>&1; then
+  echo "Missing codesign. Install Xcode Command Line Tools." >&2
+  exit 1
+fi
+
+if ! security find-identity -v -p codesigning | grep -q "$SIGNING_IDENTITY"; then
+  echo "Signing identity not found: $SIGNING_IDENTITY" >&2
+  exit 1
+fi
+
 if ! command -v gh >/dev/null 2>&1; then
   echo "Missing GitHub CLI (gh). Install it and run 'gh auth login'." >&2
   exit 1
 fi
 
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$INFO_PLIST"
+CURRENT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_PLIST")
+if [[ "$CURRENT_VERSION" != "$VERSION" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$INFO_PLIST"
 
-git add "$INFO_PLIST"
-git commit -m "Release $VERSION"
-git tag -a "v$VERSION" -m "v$VERSION"
+  git add "$INFO_PLIST"
+  git commit -m "Release $VERSION"
+fi
+
+if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+  git tag -a "v$VERSION" -m "v$VERSION"
+fi
 
 echo "Building archive..."
 rm -rf "$BUILD_DIR"
@@ -55,10 +74,13 @@ xcodebuild archive \
   -project "$PROJECT_PATH" \
   -scheme "$SCHEME" \
   -configuration Release \
-  -archivePath "$ARCHIVE_PATH"
+  -archivePath "$ARCHIVE_PATH" \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+  DEVELOPMENT_TEAM="$TEAM_ID"
 
 EXPORT_OPTIONS_PLIST="$BUILD_DIR/exportOptions.plist"
-cat > "$EXPORT_OPTIONS_PLIST" <<'PLIST'
+cat > "$EXPORT_OPTIONS_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -66,7 +88,11 @@ cat > "$EXPORT_OPTIONS_PLIST" <<'PLIST'
   <key>method</key>
   <string>developer-id</string>
   <key>signingStyle</key>
-  <string>automatic</string>
+  <string>manual</string>
+  <key>teamID</key>
+  <string>$TEAM_ID</string>
+  <key>signingCertificate</key>
+  <string>$SIGNING_IDENTITY</string>
 </dict>
 </plist>
 PLIST
