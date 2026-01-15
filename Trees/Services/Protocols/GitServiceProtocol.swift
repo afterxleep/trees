@@ -10,7 +10,7 @@ enum GitError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .pullFailed(let message):
-            return "Failed to pull from main: \(message)"
+            return "Failed to pull from default branch: \(message)"
         case .worktreeCreationFailed(let message):
             return "Failed to create worktree: \(message)"
         case .notAGitRepository:
@@ -23,7 +23,7 @@ enum GitError: Error, LocalizedError {
 
 /// Protocol for git operations
 protocol GitServiceProtocol {
-    /// Pulls the latest changes from main branch
+    /// Pulls the latest changes from the default branch when a remote is present
     /// - Parameter repoPath: Path to the git repository
     /// - Throws: GitError if pull fails
     func pullMain(at repoPath: URL) async throws

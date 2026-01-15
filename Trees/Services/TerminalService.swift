@@ -20,6 +20,7 @@ enum TerminalError: Error, LocalizedError {
 final class TerminalService: TerminalServiceProtocol {
 
     func openTerminal(at directory: URL, command: String, using terminalApp: TerminalApp) throws {
+        try ensureAppInstalled(terminalApp)
         let script: String
 
         if command.isEmpty {
@@ -44,13 +45,14 @@ final class TerminalService: TerminalServiceProtocol {
     /// Builds script to just open terminal at a path (no command)
     private func buildOpenAtPathScript(for terminalApp: TerminalApp, directory: URL) -> String {
         let path = directory.path
+        let shellCommand = "cd \(shellQuoted(path))"
 
         switch terminalApp {
         case .terminal:
             return """
             tell application "Terminal"
                 activate
-                do script "cd '\(path)'"
+                do script "\(appleScriptEscaped(shellCommand))"
             end tell
             """
         case .iterm:
@@ -59,21 +61,33 @@ final class TerminalService: TerminalServiceProtocol {
                 activate
                 create window with default profile
                 tell current session of current window
-                    write text "cd '\(path)'"
+                    write text "\(appleScriptEscaped(shellCommand))"
                 end tell
             end tell
             """
         case .ghostty:
+            let openCommand = openCommand(
+                for: terminalApp,
+                arguments: ["--working-directory=\(path)"]
+            )
             return """
-            do shell script "open -na Ghostty --args --working-directory='\(path)'"
+            do shell script "\(appleScriptEscaped(openCommand))"
             """
         case .warp:
+            let openCommand = openCommand(
+                for: terminalApp,
+                arguments: [path]
+            )
             return """
-            do shell script "open -na Warp --args '\(path)'"
+            do shell script "\(appleScriptEscaped(openCommand))"
             """
         case .alacritty:
+            let openCommand = openCommand(
+                for: terminalApp,
+                arguments: ["--working-directory", path]
+            )
             return """
-            do shell script "open -na Alacritty --args --working-directory '\(path)'"
+            do shell script "\(appleScriptEscaped(openCommand))"
             """
         }
     }
@@ -81,13 +95,14 @@ final class TerminalService: TerminalServiceProtocol {
     /// Builds the AppleScript to launch the terminal with a command
     func buildAppleScript(for terminalApp: TerminalApp, directory: URL, command: String) -> String {
         let path = directory.path
+        let shellCommand = "cd \(shellQuoted(path)) && \(command)"
 
         switch terminalApp {
         case .terminal:
             return """
             tell application "Terminal"
                 activate
-                do script "cd '\(path)' && \(command)"
+                do script "\(appleScriptEscaped(shellCommand))"
             end tell
             """
         case .iterm:
@@ -96,36 +111,55 @@ final class TerminalService: TerminalServiceProtocol {
                 activate
                 create window with default profile
                 tell current session of current window
-                    write text "cd '\(path)' && \(command)"
+                    write text "\(appleScriptEscaped(shellCommand))"
                 end tell
             end tell
             """
         case .ghostty:
+            let openCommand = openCommand(
+                for: terminalApp,
+                arguments: ["--working-directory=\(path)", "-e", command]
+            )
             return """
-            do shell script "open -na Ghostty --args --working-directory='\(path)'"
-            delay 1
-            tell application "System Events"
-                tell process "Ghostty"
-                    keystroke "\(command)"
-                    keystroke return
-                end tell
-            end tell
+            do shell script "\(appleScriptEscaped(openCommand))"
             """
         case .warp:
+            let openCommand = openCommand(
+                for: terminalApp,
+                arguments: [path, "--command", command]
+            )
             return """
-            do shell script "open -na Warp --args '\(path)'"
-            delay 0.5
-            tell application "System Events"
-                tell process "Warp"
-                    keystroke "\(command)"
-                    keystroke return
-                end tell
-            end tell
+            do shell script "\(appleScriptEscaped(openCommand))"
             """
         case .alacritty:
+            let openCommand = openCommand(
+                for: terminalApp,
+                arguments: ["--working-directory", path, "-e", "/bin/zsh", "-lc", command]
+            )
             return """
-            do shell script "open -na Alacritty --args --working-directory '\(path)' -e '\(command)'"
+            do shell script "\(appleScriptEscaped(openCommand))"
             """
         }
+    }
+
+    private func ensureAppInstalled(_ terminalApp: TerminalApp) throws {
+        guard NSWorkspace.shared.urlForApplication(withBundleIdentifier: terminalApp.bundleIdentifier) != nil else {
+            throw TerminalError.terminalNotInstalled(terminalApp)
+        }
+    }
+
+    private func openCommand(for terminalApp: TerminalApp, arguments: [String]) -> String {
+        let argString = arguments.map { shellQuoted($0) }.joined(separator: " ")
+        return "open -n -b \(terminalApp.bundleIdentifier) --args \(argString)"
+    }
+
+    private func shellQuoted(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    private func appleScriptEscaped(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - Popover Menu View
@@ -8,20 +9,16 @@ struct RepoMenuView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            header
+
+            Divider()
+
             // Scrollable repo list
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if appState.repositories.isEmpty {
-                        Text("No folders found")
-                            .foregroundStyle(.secondary)
-                            .padding()
-                    } else {
-                        ForEach(appState.repositories) { repo in
-                            RepoRowView(repo: repo, appState: appState)
-                        }
-                    }
+                    contentRows
                 }
-                .padding(.vertical, 6)
+                .padding(.vertical, 8)
             }
             .frame(maxHeight: 400)
 
@@ -53,7 +50,73 @@ struct RepoMenuView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .frame(width: 280)
+        .frame(width: 320)
+        .alert("Error", isPresented: $appState.showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(appState.errorMessage ?? "Something went wrong.")
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image("MenuBarIcon")
+                    .renderingMode(.template)
+                    .resizable()
+                    .frame(width: 14, height: 14)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Trees")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("\(appState.filteredRepositories.count) folders")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button(action: { appState.loadRepositories() }) {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.plain)
+                .help("Refresh")
+            }
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                TextField("Search folders", text: $appState.searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(NSColor.textBackgroundColor))
+            )
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+    }
+
+    private var contentRows: some View {
+        Group {
+            if appState.isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .padding(.vertical, 20)
+            } else if appState.filteredRepositories.isEmpty {
+                Text(appState.searchText.isEmpty ? "No folders found" : "No matches")
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 18)
+            } else {
+                ForEach(appState.filteredRepositories) { repo in
+                    RepoRowView(repo: repo, appState: appState)
+                }
+            }
+        }
     }
 }
 
@@ -68,7 +131,12 @@ struct RepoRowView: View {
 
     var body: some View {
         HStack(spacing: 8) {
+            Image(systemName: repo.isGitRepository ? "arrow.triangle.branch" : "folder")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
             Text(repo.name)
+                .font(.system(size: 12, weight: .medium))
                 .lineLimit(1)
 
             Spacer()
@@ -113,6 +181,7 @@ struct RepoRowView: View {
                             }
                             Button("Create Worktree...") {
                                 appState.selectedRepository = repo
+                                NSApplication.shared.activate(ignoringOtherApps: true)
                                 openWindow(id: "worktree")
                                 dismiss()
                             }
@@ -127,9 +196,11 @@ struct RepoRowView: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(height: 26)
-        .background(isHovering ? Color.primary.opacity(0.1) : Color.clear)
-        .cornerRadius(4)
+        .frame(height: 28)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isHovering ? Color.primary.opacity(0.08) : Color.clear)
+        )
         .padding(.horizontal, 5)
         .contentShape(Rectangle())
         .onHover { hovering in
@@ -148,16 +219,23 @@ struct WorktreeWindowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("New Worktree")
-                .font(.headline)
+                .font(.system(size: 16, weight: .semibold))
 
             if let repo = appState.selectedRepository {
-                Text("Repository: \(repo.name)")
+                Text(repo.name)
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
             }
 
-            TextField("Feature name", text: $appState.featureName)
-                .textFieldStyle(.roundedBorder)
-                .focused($isTextFieldFocused)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Branch name")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+
+                TextField("feature/my-branch", text: $appState.featureName)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($isTextFieldFocused)
+            }
 
             HStack {
                 Button("Cancel") {
@@ -175,19 +253,29 @@ struct WorktreeWindowView: View {
                     Button("Create") {
                         guard let repo = appState.selectedRepository else { return }
                         Task {
-                            await appState.createWorktree(for: repo, featureName: appState.featureName)
-                            dismiss()
+                            let success = await appState.createWorktree(
+                                for: repo,
+                                featureName: appState.featureName
+                            )
+                            if success {
+                                dismiss()
+                            }
                         }
                     }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(appState.featureName.isEmpty)
+                    .disabled(appState.featureName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
         .padding(20)
-        .frame(width: 300)
+        .frame(width: 320)
         .onAppear {
             isTextFieldFocused = true
+        }
+        .alert("Error", isPresented: $appState.showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(appState.errorMessage ?? "Something went wrong.")
         }
     }
 }

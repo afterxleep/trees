@@ -10,8 +10,18 @@ final class GitService: GitServiceProtocol {
     }
 
     func pullMain(at repoPath: URL) async throws {
+        let gitPath = repoPath.appendingPathComponent(".git")
+        guard fileManager.fileExists(atPath: gitPath.path) else {
+            throw GitError.notAGitRepository
+        }
+
+        guard await hasRemote(named: "origin", in: repoPath) else {
+            return
+        }
+
+        let defaultBranch = await defaultBranchName(in: repoPath)
         let result = try await runGitCommand(
-            ["pull", "origin", "main"],
+            ["pull", "origin", defaultBranch],
             in: repoPath
         )
 
@@ -38,15 +48,24 @@ final class GitService: GitServiceProtocol {
             )
         }
 
-        // Create the worktree with a new branch
+        if fileManager.fileExists(atPath: worktreePath.path) {
+            throw GitError.worktreeCreationFailed("Worktree path already exists.")
+        }
+
+        let defaultBranch = await defaultBranchName(in: repoPath)
+        let branchExists = await branchExists(featureName, in: repoPath)
+
+        // Create the worktree with a new branch (or attach existing)
         let result = try await runGitCommand(
-            ["worktree", "add", "-b", featureName, worktreePath.path, "main"],
+            branchExists
+                ? ["worktree", "add", worktreePath.path, featureName]
+                : ["worktree", "add", "-b", featureName, worktreePath.path, defaultBranch],
             in: repoPath
         )
 
         if result.exitCode != 0 {
             let stderr = result.stderr.lowercased()
-            if stderr.contains("already exists") {
+            if stderr.contains("already exists") || stderr.contains("already checked out") {
                 throw GitError.branchAlreadyExists(featureName)
             }
             throw GitError.worktreeCreationFailed(result.stderr)
@@ -66,7 +85,7 @@ final class GitService: GitServiceProtocol {
 
     func listWorktrees(at repoPath: URL) async throws -> [Worktree] {
         let result = try await runGitCommand(
-            ["worktree", "list"],
+            ["worktree", "list", "--porcelain"],
             in: repoPath
         )
 
@@ -74,54 +93,32 @@ final class GitService: GitServiceProtocol {
             throw GitError.notAGitRepository
         }
 
-        // Parse output like:
-        // /path/to/repo  abc1234 [main]
-        // /path/to/worktree  def5678 [feature]
         var worktrees: [Worktree] = []
-        let lines = result.stdout.components(separatedBy: "\n")
-        var isFirst = true
+        var currentPath: URL?
+        var currentBranch: String?
 
-        for line in lines {
-            guard !line.isEmpty else { continue }
-
-            // Extract path (everything before the first space followed by a hash)
-            // Extract branch name from [branchname]
-            if let bracketRange = line.range(of: "\\[([^\\]]+)\\]", options: .regularExpression) {
-                let branchWithBrackets = String(line[bracketRange])
-                let branch = String(branchWithBrackets.dropFirst().dropLast())
-
-                // Path is everything up to the commit hash (7+ hex chars)
-                let pathPart = line.prefix(while: { char in
-                    // Stop when we hit whitespace followed by what looks like a hash
-                    true
-                })
-
-                // Find the path by looking for the first whitespace followed by hex
-                var pathString = ""
-                var foundHash = false
-                var i = line.startIndex
-                while i < line.endIndex {
-                    let remaining = String(line[i...])
-                    if remaining.hasPrefix(" ") && remaining.count > 8 {
-                        let afterSpace = remaining.dropFirst()
-                        if afterSpace.prefix(7).allSatisfy({ $0.isHexDigit }) {
-                            foundHash = true
-                            break
-                        }
-                    }
-                    pathString.append(line[i])
-                    i = line.index(after: i)
-                }
-
-                if foundHash {
-                    let path = URL(fileURLWithPath: pathString.trimmingCharacters(in: .whitespaces))
-                    let worktree = Worktree(path: path, branch: branch, isMain: isFirst)
-                    worktrees.append(worktree)
-                }
-            }
-            isFirst = false
+        func finalizeEntry() {
+            guard let path = currentPath else { return }
+            let branch = currentBranch ?? "detached"
+            let isMain = path.standardizedFileURL == repoPath.standardizedFileURL
+            worktrees.append(Worktree(path: path, branch: branch, isMain: isMain))
         }
 
+        for line in result.stdout.split(separator: "\n") {
+            if line.hasPrefix("worktree ") {
+                finalizeEntry()
+                let pathString = line.dropFirst("worktree ".count)
+                currentPath = URL(fileURLWithPath: String(pathString))
+                currentBranch = nil
+            } else if line.hasPrefix("branch ") {
+                let ref = line.dropFirst("branch ".count)
+                currentBranch = String(ref).replacingOccurrences(of: "refs/heads/", with: "")
+            } else if line.hasPrefix("detached") {
+                currentBranch = "detached"
+            }
+        }
+
+        finalizeEntry()
         return worktrees
     }
 
@@ -166,5 +163,59 @@ final class GitService: GitServiceProtocol {
                 }
             }
         }
+    }
+
+    private func hasRemote(named name: String, in repoPath: URL) async -> Bool {
+        guard let result = try? await runGitCommand(
+            ["remote", "get-url", name],
+            in: repoPath
+        ) else {
+            return false
+        }
+        return result.exitCode == 0
+    }
+
+    private func defaultBranchName(in repoPath: URL) async -> String {
+        if let result = try? await runGitCommand(
+            ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
+            in: repoPath
+        ),
+        result.exitCode == 0 {
+            let value = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            if value.hasPrefix("origin/") {
+                return String(value.dropFirst("origin/".count))
+            }
+        }
+
+        if let result = try? await runGitCommand(
+            ["symbolic-ref", "--short", "HEAD"],
+            in: repoPath
+        ),
+        result.exitCode == 0 {
+            let branch = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !branch.isEmpty {
+                return branch
+            }
+        }
+
+        if await branchExists("main", in: repoPath) {
+            return "main"
+        }
+
+        if await branchExists("master", in: repoPath) {
+            return "master"
+        }
+
+        return "main"
+    }
+
+    private func branchExists(_ branch: String, in repoPath: URL) async -> Bool {
+        guard let result = try? await runGitCommand(
+            ["show-ref", "--verify", "--quiet", "refs/heads/\(branch)"],
+            in: repoPath
+        ) else {
+            return false
+        }
+        return result.exitCode == 0
     }
 }

@@ -71,11 +71,15 @@ final class AppState: ObservableObject {
     }
 
     func openWorktreeInTerminal(_ worktree: Worktree) {
-        try? terminalService.openTerminal(
-            at: worktree.path,
-            command: "",
-            using: settings.terminalApp
-        )
+        do {
+            try terminalService.openTerminal(
+                at: worktree.path,
+                command: "",
+                using: settings.terminalApp
+            )
+        } catch {
+            handleError(error)
+        }
     }
 
     func openInFinder(_ repository: Repository) {
@@ -83,16 +87,27 @@ final class AppState: ObservableObject {
     }
 
     func openInTerminal(_ repository: Repository) {
-        try? terminalService.openTerminal(
-            at: repository.path,
-            command: "",
-            using: settings.terminalApp
-        )
+        do {
+            try terminalService.openTerminal(
+                at: repository.path,
+                command: "",
+                using: settings.terminalApp
+            )
+        } catch {
+            handleError(error)
+        }
     }
 
-    func createWorktree(for repository: Repository, featureName: String) async {
+    func createWorktree(for repository: Repository, featureName: String) async -> Bool {
         isCreatingWorktree = true
+        defer { isCreatingWorktree = false }
         errorMessage = nil
+
+        let trimmedFeature = featureName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedFeature.isEmpty else {
+            handleError(GitError.worktreeCreationFailed("Feature name cannot be empty."))
+            return false
+        }
 
         do {
             // Pull latest from main
@@ -101,13 +116,13 @@ final class AppState: ObservableObject {
             // Create the worktree
             let worktreePath = try await gitService.createWorktree(
                 at: repository.path,
-                featureName: featureName
+                featureName: trimmedFeature
             )
 
             // Open terminal at worktree and run command
             try terminalService.openTerminal(
                 at: worktreePath,
-                command: settings.commandToRun,
+                command: "",
                 using: settings.terminalApp
             )
 
@@ -115,12 +130,15 @@ final class AppState: ObservableObject {
             loadRepositories()
 
         } catch {
-            errorMessage = error.localizedDescription
-            showError = true
+            handleError(error)
+            return false
         }
-
-        isCreatingWorktree = false
-        showWorktreeSheet = false
         self.featureName = ""
+        return true
+    }
+
+    private func handleError(_ error: Error) {
+        errorMessage = error.localizedDescription
+        showError = true
     }
 }

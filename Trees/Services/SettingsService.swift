@@ -8,7 +8,6 @@ final class SettingsService: ObservableObject {
 
     private enum Keys {
         static let developerPath = "developerPath"
-        static let commandToRun = "commandToRun"
         static let terminalApp = "terminalApp"
     }
 
@@ -20,7 +19,6 @@ final class SettingsService: ObservableObject {
     private func registerDefaults() {
         let defaults: [String: Any] = [
             Keys.developerPath: NSHomeDirectory() + "/Developer",
-            Keys.commandToRun: "cld",
             Keys.terminalApp: TerminalApp.ghostty.rawValue
         ]
         userDefaults.register(defaults: defaults)
@@ -41,16 +39,6 @@ final class SettingsService: ObservableObject {
         return URL(fileURLWithPath: path)
     }
 
-    // MARK: - Command to Run
-
-    var commandToRun: String {
-        get { userDefaults.string(forKey: Keys.commandToRun) ?? "cld" }
-        set {
-            userDefaults.set(newValue, forKey: Keys.commandToRun)
-            objectWillChange.send()
-        }
-    }
-
     // MARK: - Terminal App
 
     var terminalApp: TerminalApp {
@@ -66,4 +54,5 @@ final class SettingsService: ObservableObject {
             objectWillChange.send()
         }
     }
+
 }

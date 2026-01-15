@@ -27,7 +27,7 @@ final class TerminalServiceTests: XCTestCase {
             command: command
         )
 
-        XCTAssertTrue(script.contains("Ghostty"))
+        XCTAssertTrue(script.contains("com.mitchellh.ghostty"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
     }
@@ -72,7 +72,7 @@ final class TerminalServiceTests: XCTestCase {
             command: command
         )
 
-        XCTAssertTrue(script.contains("Warp"))
+        XCTAssertTrue(script.contains("dev.warp.Warp-Stable"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
     }
@@ -87,7 +87,7 @@ final class TerminalServiceTests: XCTestCase {
             command: command
         )
 
-        XCTAssertTrue(script.contains("Alacritty"))
+        XCTAssertTrue(script.contains("org.alacritty"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
     }

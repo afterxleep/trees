@@ -22,6 +22,7 @@
 		A533B9CC5496D9D7FAD1D058 /* TerminalServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89154277EE5D1FB616A92FC1 /* TerminalServiceProtocol.swift */; };
 		A78F692C50079EE3DBB15221 /* Worktree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2E8F97FD341B9F754E1E2 /* Worktree.swift */; };
 		B46177DAD0102F1199797B3E /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E00519F09FF204CBE4B562B /* AppState.swift */; };
+		C1A1B2C3D4E5F6A7B8C9D0E1 /* LLMAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A1B2C3D4E5F6A7B8C9D0E2 /* LLMAgent.swift */; };
 		CC9A4A1C08696715475DB84F /* FileServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF4DFE5127316570A6559F1 /* FileServiceTests.swift */; };
 		DACBFC35C41B82BF559BDE89 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25052ABFD61CDA89C39F4AFF /* SettingsService.swift */; };
 		DDC68A4DED032606217E94B2 /* Repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E03BF622DEE5BA5F110DC51E /* Repository.swift */; };
@@ -63,6 +64,7 @@
 		90BB573F33485C488B3F53E5 /* Trees.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Trees.entitlements; sourceTree = "<group>"; };
 		9FC480362398E233AA910840 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B7CB6CA84E47DFF46F2D3E44 /* GitServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitServiceTests.swift; sourceTree = "<group>"; };
+		C1A1B2C3D4E5F6A7B8C9D0E2 /* LLMAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMAgent.swift; sourceTree = "<group>"; };
 		C0A9A8F42B8F5C0814EDA9AD /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		D31173F85DC03FCC023C0E53 /* FileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileService.swift; sourceTree = "<group>"; };
 		D622F80312FFD765AB887763 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -137,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				2E00519F09FF204CBE4B562B /* AppState.swift */,
+				C1A1B2C3D4E5F6A7B8C9D0E2 /* LLMAgent.swift */,
 				E03BF622DEE5BA5F110DC51E /* Repository.swift */,
 				1AE2E8F97FD341B9F754E1E2 /* Worktree.swift */,
 			);
@@ -287,6 +290,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B46177DAD0102F1199797B3E /* AppState.swift in Sources */,
+				C1A1B2C3D4E5F6A7B8C9D0E1 /* LLMAgent.swift in Sources */,
 				E6112D76658C26061F586F77 /* FileService.swift in Sources */,
 				ECBD7B9BEFEEDF436D677774 /* FileServiceProtocol.swift in Sources */,
 				FDF21B6A1C80F166B4AD6451 /* GitService.swift in Sources */,

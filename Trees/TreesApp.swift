@@ -9,8 +9,11 @@ struct TreesApp: App {
     }()
 
     var body: some Scene {
-        MenuBarExtra("Trees", systemImage: "tree") {
+        MenuBarExtra {
             RepoMenuView(appState: appState)
+        } label: {
+            Label("Trees", image: "MenuBarIcon")
+                .labelStyle(.iconOnly)
         }
         .menuBarExtraStyle(.window)
 

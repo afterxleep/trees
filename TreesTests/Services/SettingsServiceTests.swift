@@ -28,10 +28,6 @@ final class SettingsServiceTests: XCTestCase {
         XCTAssertEqual(sut.developerPath, expected)
     }
 
-    func testDefaultCommandToRun() {
-        XCTAssertEqual(sut.commandToRun, "cld")
-    }
-
     func testDefaultTerminalApp() {
         XCTAssertEqual(sut.terminalApp, .ghostty)
     }
@@ -44,13 +40,6 @@ final class SettingsServiceTests: XCTestCase {
         // Create new instance with same UserDefaults
         let newInstance = SettingsService(userDefaults: userDefaults)
         XCTAssertEqual(newInstance.developerPath, "/custom/path")
-    }
-
-    func testCommandToRunPersists() {
-        sut.commandToRun = "custom-command"
-
-        let newInstance = SettingsService(userDefaults: userDefaults)
-        XCTAssertEqual(newInstance.commandToRun, "custom-command")
     }
 
     func testTerminalAppPersists() {
