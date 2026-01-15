@@ -15,16 +15,16 @@ final class AppState: ObservableObject {
     @Published var featureName: String = ""
     @Published var isCreatingWorktree: Bool = false
 
-    let settings: SettingsService
-    let fileService: FileService
-    let gitService: GitService
-    let terminalService: TerminalService
+    let settings: SettingsServiceProtocol
+    let fileService: FileServiceProtocol
+    let gitService: GitServiceProtocol
+    let terminalService: TerminalServiceProtocol
 
     init(
-        settings: SettingsService = SettingsService(),
-        fileService: FileService = FileService(),
-        gitService: GitService = GitService(),
-        terminalService: TerminalService = TerminalService()
+        settings: SettingsServiceProtocol = SettingsService(),
+        fileService: FileServiceProtocol = FileService(),
+        gitService: GitServiceProtocol = GitService(),
+        terminalService: TerminalServiceProtocol = TerminalService()
     ) {
         self.settings = settings
         self.fileService = fileService
@@ -42,24 +42,36 @@ final class AppState: ObservableObject {
     }
 
     func loadRepositories() {
-        isLoading = true
-        repositories = fileService.scanRepositories(in: settings.developerPathURL)
-
-        // Load worktrees for git repositories only
         Task {
-            for repo in repositories where repo.isGitRepository {
-                if let repoWorktrees = try? await gitService.listWorktrees(at: repo.path) {
-                    // Filter out the main worktree
-                    let nonMainWorktrees = repoWorktrees.filter { !$0.isMain }
-                    if !nonMainWorktrees.isEmpty {
-                        worktrees[repo.id] = nonMainWorktrees
-                    } else {
-                        worktrees.removeValue(forKey: repo.id)
-                    }
+            await loadRepositoriesAsync()
+        }
+    }
+
+    func loadRepositoriesAsync() async {
+        isLoading = true
+        let developerPath = settings.developerPathURL
+        let fileService = fileService
+        let gitService = gitService
+
+        let repositories = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: fileService.scanRepositories(in: developerPath))
+            }
+        }
+
+        self.repositories = repositories
+
+        var updatedWorktrees: [UUID: [Worktree]] = [:]
+        for repo in repositories where repo.isGitRepository {
+            if let repoWorktrees = try? await gitService.listWorktrees(at: repo.path) {
+                let nonMainWorktrees = repoWorktrees.filter { !$0.isMain }
+                if !nonMainWorktrees.isEmpty {
+                    updatedWorktrees[repo.id] = nonMainWorktrees
                 }
             }
-            isLoading = false
         }
+        worktrees = updatedWorktrees
+        isLoading = false
     }
 
     func worktreesForRepo(_ repo: Repository) -> [Worktree] {

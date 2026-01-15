@@ -2,11 +2,17 @@ import SwiftUI
 
 @main
 struct TreesApp: App {
-    @StateObject private var appState: AppState = {
-        let state = AppState()
+    @StateObject private var settings: SettingsService
+    @StateObject private var appState: AppState
+
+    init() {
+        let settings = SettingsService()
+        _settings = StateObject(wrappedValue: settings)
+
+        let state = AppState(settings: settings)
         state.loadRepositories()
-        return state
-    }()
+        _appState = StateObject(wrappedValue: state)
+    }
 
     var body: some Scene {
         MenuBarExtra {
@@ -18,7 +24,7 @@ struct TreesApp: App {
         .menuBarExtraStyle(.window)
 
         Window("Settings", id: "settings") {
-            SettingsView(settings: appState.settings)
+            SettingsView(settings: settings)
         }
         .windowResizability(.contentSize)
 

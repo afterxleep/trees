@@ -16,7 +16,7 @@ final class WorktreeTests: XCTestCase {
         let path = URL(fileURLWithPath: "/Users/test/project.worktrees/feature-login")
         let worktree = Worktree(path: path, branch: "feature-login", isMain: false)
 
-        XCTAssertNotNil(worktree.id)
+        XCTAssertEqual(worktree.id, path.standardizedFileURL.path)
     }
 
     func testWorktreeNameReturnsBranchName() {

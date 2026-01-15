@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 /// Service for managing user preferences
-final class SettingsService: ObservableObject {
+final class SettingsService: ObservableObject, SettingsServiceProtocol {
 
     private let userDefaults: UserDefaults
 

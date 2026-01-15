@@ -1,7 +1,7 @@
 import Foundation
 @testable import Trees
 
-final class MockFileService: FileServiceProtocol {
+final class MockFileService: FileServiceProtocol, @unchecked Sendable {
     var repositoriesToReturn: [Repository] = []
     var isGitRepositoryResult: Bool = true
     var openInFinderCalledWith: URL?

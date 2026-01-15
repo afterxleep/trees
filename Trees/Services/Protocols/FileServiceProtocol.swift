@@ -1,7 +1,7 @@
 import Foundation
 
 /// Protocol for scanning directories for git repositories
-protocol FileServiceProtocol {
+protocol FileServiceProtocol: Sendable {
     /// Scans the given directory for git repositories
     /// - Parameter directory: The directory to scan
     /// - Returns: Array of Repository objects found

@@ -1,30 +1,42 @@
 # Trees
 
-Trees is a lightweight macOS menu bar app for managing git repositories and worktrees under your developer folder.
+![Trees menu bar app](screenshot.png)
 
-## Features
+Trees is a macOS menu bar app for browsing repositories and creating git worktrees inside your developer folder.
 
-- Lists repositories from a configurable developer folder.
-- Creates git worktrees and opens them in your preferred terminal.
-- Quick actions to open repositories and worktrees in Finder or Terminal.
+## Highlights
+
+- Fast list of folders with git detection and search.
+- One-click worktree creation with terminal launch.
+- Quick actions for Finder and Terminal.
+
+## Quick Start
+
+1. Open `Trees.xcodeproj` in Xcode.
+2. Select the `Trees` scheme and run on `My Mac`.
+3. Open Settings to set your developer folder and preferred terminal.
+
+## Usage
+
+1. Click the Trees menu bar icon.
+2. Search or select a repository.
+3. Use the actions menu to create a worktree or open the repo.
+
+## Settings
+
+- Developer Folder: the root directory to scan for repositories.
+- Terminal: the app used when opening repos or worktrees.
 
 ## Requirements
 
 - macOS 14.0+
 - Xcode 15+ (Swift 5.9)
-- Git installed and available at `/usr/bin/git`
+- Git available at `/usr/bin/git`
 
-## Getting Started
+## Development
 
-1. Open `Trees.xcodeproj` in Xcode.
-2. Select the `Trees` scheme and run on `My Mac`.
-3. Open Settings and choose your developer folder and preferred terminal.
-
-## Usage
-
-1. Click the Trees menu bar icon.
-2. Find a repository in the list.
-3. Use the actions menu to create a worktree or open the repo.
+- Run tests: `xcodebuild test -scheme Trees -destination 'platform=macOS'`
+- The app runs as a menu bar extra and does not appear in the Dock.
 
 ## Release Checklist
 
@@ -35,4 +47,4 @@ Trees is a lightweight macOS menu bar app for managing git repositories and work
 ## Notes
 
 - Terminal support includes Terminal, iTerm, Ghostty, Warp, and Alacritty.
-- If a terminal app is not installed, Trees will show an error message.
+- If the selected terminal is not installed, Trees shows an error message.

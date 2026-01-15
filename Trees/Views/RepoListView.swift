@@ -27,12 +27,6 @@ struct RepoMenuView: View {
 
             // Footer buttons
             HStack(spacing: 16) {
-                Button(action: { appState.loadRepositories() }) {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.plain)
-                .help("Refresh")
-
                 Button(action: { openWindow(id: "settings") }) {
                     Image(systemName: "gear")
                 }

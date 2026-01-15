@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 /// Service for scanning directories and file operations
-final class FileService: FileServiceProtocol {
+final class FileService: FileServiceProtocol, @unchecked Sendable {
 
     private let fileManager: FileManager
 
