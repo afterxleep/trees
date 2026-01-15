@@ -8,6 +8,13 @@ struct SettingsView: View {
             Text("Settings")
                 .font(.system(size: 16, weight: .semibold))
 
+            GroupBox("General") {
+                Toggle("Launch at login", isOn: $settings.launchAtLogin)
+                    .toggleStyle(.switch)
+                    .font(.system(size: 12))
+                    .padding(.vertical, 4)
+            }
+
             GroupBox("Workspace") {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Developer Folder")

@@ -1,4 +1,5 @@
 import Foundation
+import ServiceManagement
 import SwiftUI
 
 /// Service for managing user preferences
@@ -51,6 +52,26 @@ final class SettingsService: ObservableObject, SettingsServiceProtocol {
         }
         set {
             userDefaults.set(newValue.rawValue, forKey: Keys.terminalApp)
+            objectWillChange.send()
+        }
+    }
+
+    // MARK: - Launch at Login
+
+    var launchAtLogin: Bool {
+        get {
+            SMAppService.mainApp.status == .enabled
+        }
+        set {
+            do {
+                if newValue {
+                    try SMAppService.mainApp.register()
+                } else {
+                    try SMAppService.mainApp.unregister()
+                }
+            } catch {
+                // Best-effort; keep the toggle in sync with actual status.
+            }
             objectWillChange.send()
         }
     }

@@ -6,6 +6,7 @@ import SwiftUI
 struct RepoMenuView: View {
     @ObservedObject var appState: AppState
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,7 +28,11 @@ struct RepoMenuView: View {
 
             // Footer buttons
             HStack(spacing: 16) {
-                Button(action: { openWindow(id: "settings") }) {
+                Button(action: {
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                    openWindow(id: "settings")
+                    dismiss()
+                }) {
                     Image(systemName: "gear")
                 }
                 .buttonStyle(.plain)
