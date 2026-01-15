@@ -116,9 +116,17 @@ sed -i '' "s/VERSION_PLACEHOLDER/$VERSION/g" "$NOTE_FILE"
 git push origin main --tags
 
 echo "Creating GitHub release..."
-gh release create "v$VERSION" "$ZIP_PATH" \
-  --title "v$VERSION" \
-  --notes-file "$NOTE_FILE" \
-  --latest
+if gh release view "v$VERSION" >/dev/null 2>&1; then
+  echo "Release v$VERSION already exists. Updating assets and notes..."
+  gh release upload "v$VERSION" "$ZIP_PATH" --clobber
+  gh release edit "v$VERSION" \
+    --title "v$VERSION" \
+    --notes-file "$NOTE_FILE"
+else
+  gh release create "v$VERSION" "$ZIP_PATH" \
+    --title "v$VERSION" \
+    --notes-file "$NOTE_FILE" \
+    --latest
+fi
 
 echo "Release complete: v$VERSION"
