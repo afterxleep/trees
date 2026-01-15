@@ -11,6 +11,12 @@ ARCHIVE_PATH="$BUILD_DIR/Trees.xcarchive"
 EXPORT_PATH="$BUILD_DIR/export"
 APP_PATH="$EXPORT_PATH/Trees.app"
 
+# Notarization profile setup example:
+# xcrun notarytool store-credentials "FlowDeck-Notarize" \
+#   --apple-id "you@example.com" \
+#   --team-id "TEAMID" \
+#   --password "app-specific-password"
+
 VERSION=${1:-}
 if [[ -z "$VERSION" ]]; then
   echo "Usage: scripts/release.sh <version>" >&2
@@ -27,7 +33,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
-: "${NOTARY_PROFILE:?Set NOTARY_PROFILE to your notarytool keychain profile name}"
+NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-FlowDeck-Notarize}"
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "Missing GitHub CLI (gh). Install it and run 'gh auth login'." >&2
@@ -74,7 +80,7 @@ ZIP_PATH="$BUILD_DIR/Trees-$VERSION.zip"
 /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 
 echo "Notarizing..."
-xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARIZE_PROFILE" --wait
 xcrun stapler staple "$APP_PATH"
 
 NOTE_FILE="$BUILD_DIR/release-notes.txt"
