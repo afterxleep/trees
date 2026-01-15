@@ -77,7 +77,8 @@ final class TerminalService: TerminalServiceProtocol {
         case .warp:
             let openCommand = openCommand(
                 for: terminalApp,
-                arguments: [path]
+                arguments: [path],
+                openNewInstance: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"
@@ -85,7 +86,8 @@ final class TerminalService: TerminalServiceProtocol {
         case .alacritty:
             let openCommand = openCommand(
                 for: terminalApp,
-                arguments: ["--working-directory", path]
+                arguments: ["--working-directory", path],
+                openNewInstance: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"
@@ -128,7 +130,8 @@ final class TerminalService: TerminalServiceProtocol {
         case .warp:
             let openCommand = openCommand(
                 for: terminalApp,
-                arguments: [path, "--command", command]
+                arguments: [path, "--command", command],
+                openNewInstance: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"
@@ -136,7 +139,8 @@ final class TerminalService: TerminalServiceProtocol {
         case .alacritty:
             let openCommand = openCommand(
                 for: terminalApp,
-                arguments: ["--working-directory", path, "-e", "/bin/zsh", "-lc", command]
+                arguments: ["--working-directory", path, "-e", "/bin/zsh", "-lc", command],
+                openNewInstance: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"

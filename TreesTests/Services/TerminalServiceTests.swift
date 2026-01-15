@@ -75,6 +75,8 @@ final class TerminalServiceTests: XCTestCase {
         )
 
         XCTAssertTrue(script.contains("dev.warp.Warp-Stable"))
+        XCTAssertTrue(script.contains("open -b dev.warp.Warp-Stable"))
+        XCTAssertFalse(script.contains("open -n -b dev.warp.Warp-Stable"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
     }
@@ -90,6 +92,8 @@ final class TerminalServiceTests: XCTestCase {
         )
 
         XCTAssertTrue(script.contains("org.alacritty"))
+        XCTAssertTrue(script.contains("open -b org.alacritty"))
+        XCTAssertFalse(script.contains("open -n -b org.alacritty"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
     }
