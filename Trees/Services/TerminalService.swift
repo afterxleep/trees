@@ -68,7 +68,8 @@ final class TerminalService: TerminalServiceProtocol {
         case .ghostty:
             let openCommand = openCommand(
                 for: terminalApp,
-                arguments: ["--working-directory=\(path)"]
+                arguments: ["--working-directory=\(path)"],
+                openNewInstance: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"
@@ -118,7 +119,8 @@ final class TerminalService: TerminalServiceProtocol {
         case .ghostty:
             let openCommand = openCommand(
                 for: terminalApp,
-                arguments: ["--working-directory=\(path)", "-e", command]
+                arguments: ["--working-directory=\(path)", "-e", command],
+                openNewInstance: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"
@@ -148,9 +150,14 @@ final class TerminalService: TerminalServiceProtocol {
         }
     }
 
-    private func openCommand(for terminalApp: TerminalApp, arguments: [String]) -> String {
+    private func openCommand(
+        for terminalApp: TerminalApp,
+        arguments: [String],
+        openNewInstance: Bool = true
+    ) -> String {
         let argString = arguments.map { shellQuoted($0) }.joined(separator: " ")
-        return "open -n -b \(terminalApp.bundleIdentifier) --args \(argString)"
+        let newInstanceFlag = openNewInstance ? "-n " : ""
+        return "open \(newInstanceFlag)-b \(terminalApp.bundleIdentifier) --args \(argString)"
     }
 
     private func shellQuoted(_ value: String) -> String {

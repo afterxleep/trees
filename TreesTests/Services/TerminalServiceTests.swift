@@ -28,6 +28,8 @@ final class TerminalServiceTests: XCTestCase {
         )
 
         XCTAssertTrue(script.contains("com.mitchellh.ghostty"))
+        XCTAssertTrue(script.contains("open -b com.mitchellh.ghostty"))
+        XCTAssertFalse(script.contains("open -n -b com.mitchellh.ghostty"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
     }
