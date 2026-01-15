@@ -11,14 +11,7 @@ ARCHIVE_PATH="$BUILD_DIR/Trees.xcarchive"
 EXPORT_PATH="$BUILD_DIR/export"
 APP_PATH="$EXPORT_PATH/Trees.app"
 
-# Notarization profile setup example:
-# xcrun notarytool store-credentials "FlowDeck-Notarize" \
-#   --apple-id "you@example.com" \
-#   --team-id "TEAMID" \
-#   --password "app-specific-password"
-
-SIGNING_IDENTITY="${SIGNING_IDENTITY:-Developer ID Application: Daniel Bernal (J9F8F3PWTV)}"
-TEAM_ID="${TEAM_ID:-J9F8F3PWTV}"
+# Notarization profile setup example is in scripts/setup-notarization.local.sh
 
 VERSION=${1:-}
 if [[ -z "$VERSION" ]]; then
@@ -36,7 +29,9 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
-NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-FlowDeck-Notarize}"
+: "${SIGNING_IDENTITY:?Set SIGNING_IDENTITY (Developer ID Application)}"
+: "${TEAM_ID:?Set TEAM_ID (Apple Developer Team ID)}"
+: "${NOTARIZE_PROFILE:?Set NOTARIZE_PROFILE (notarytool keychain profile)}"
 
 if ! command -v codesign >/dev/null 2>&1; then
   echo "Missing codesign. Install Xcode Command Line Tools." >&2

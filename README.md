@@ -1,22 +1,43 @@
 # Trees
 
-![Trees menu bar app](screenshot.png)
+<p align="center">
+  <img src="screenshot.png" alt="Trees menu bar app" width="420">
+</p>
 
-Latest download: https://github.com/afterxleep/trees/releases/latest
+<p align="center">
+  A macOS menu bar app for browsing repositories and creating git worktrees.
+</p>
 
-Trees is a macOS menu bar app for browsing repositories and creating git worktrees inside your developer folder.
+<p align="center">
+  <a href="https://github.com/afterxleep/trees/releases/latest">Latest download</a>
+</p>
 
-## Highlights
+## Overview
 
-- Fast list of folders with git detection and search.
-- One-click worktree creation with terminal launch.
-- Quick actions for Finder and Terminal.
+Trees scans your developer folder, shows your repos, and lets you open or create worktrees with a couple of clicks. It stays out of your way and lives in the menu bar.
+
+## Features
+
+- Fast repository list with search and git detection.
+- One-click worktree creation.
+- Open repositories and worktrees in Finder or your preferred terminal.
+
+## Download
+
+Get the notarized build from the latest release:
+
+- https://github.com/afterxleep/trees/releases/latest
+
+## Requirements
+
+- macOS 14.0+
+- Git available at `/usr/bin/git`
 
 ## Quick Start
 
 1. Open `Trees.xcodeproj` in Xcode.
 2. Select the `Trees` scheme and run on `My Mac`.
-3. Open Settings to set your developer folder and preferred terminal.
+3. Open Settings and set your developer folder and preferred terminal.
 
 ## Usage
 
@@ -24,27 +45,24 @@ Trees is a macOS menu bar app for browsing repositories and creating git worktre
 2. Search or select a repository.
 3. Use the actions menu to create a worktree or open the repo.
 
-## Settings
-
-- Developer Folder: the root directory to scan for repositories.
-- Terminal: the app used when opening repos or worktrees.
-
-## Requirements
-
-- macOS 14.0+
-- Xcode 15+ (Swift 5.9)
-- Git available at `/usr/bin/git`
-
 ## Development
 
 - Run tests: `xcodebuild test -scheme Trees -destination 'platform=macOS'`
 - The app runs as a menu bar extra and does not appear in the Dock.
 
-## Release Checklist
+## Release
 
-1. Update version numbers in `Trees/Info.plist`.
-2. Run tests: `xcodebuild test -scheme Trees -destination 'platform=macOS'`.
-3. Archive the app from Xcode for distribution.
+Use the release script (requires Developer ID signing and notarization setup):
+
+- `scripts/release.sh <version>`
+
+Required environment variables:
+
+- `SIGNING_IDENTITY` (Developer ID Application)
+- `TEAM_ID`
+- `NOTARIZE_PROFILE`
+
+Optional local setup script (not committed): `scripts/setup-notarization.local.sh`
 
 ## Notes
 
