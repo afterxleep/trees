@@ -18,6 +18,7 @@ enum TerminalError: Error, LocalizedError {
 
 /// Service for launching terminal applications
 final class TerminalService: TerminalServiceProtocol {
+    private let ghosttyAppName = "GhosTTY"
 
     func openTerminal(at directory: URL, command: String, using terminalApp: TerminalApp) throws {
         try ensureAppInstalled(terminalApp)
@@ -66,10 +67,11 @@ final class TerminalService: TerminalServiceProtocol {
             end tell
             """
         case .ghostty:
-            let openCommand = openCommand(
-                for: terminalApp,
-                arguments: ["--working-directory=\(path)"],
-                openNewInstance: false
+            let openCommand = openAppCommand(
+                appName: ghosttyAppName,
+                arguments: [path],
+                openNewInstance: false,
+                usesArgs: false
             )
             return """
             do shell script "\(appleScriptEscaped(openCommand))"
@@ -119,9 +121,9 @@ final class TerminalService: TerminalServiceProtocol {
             end tell
             """
         case .ghostty:
-            let openCommand = openCommand(
-                for: terminalApp,
-                arguments: ["--working-directory=\(path)", "-e", command],
+            let openCommand = openAppCommand(
+                appName: ghosttyAppName,
+                arguments: ["+new-window", "--working-directory=\(path)", "-e", command],
                 openNewInstance: false
             )
             return """
@@ -162,6 +164,22 @@ final class TerminalService: TerminalServiceProtocol {
         let argString = arguments.map { shellQuoted($0) }.joined(separator: " ")
         let newInstanceFlag = openNewInstance ? "-n " : ""
         return "open \(newInstanceFlag)-b \(terminalApp.bundleIdentifier) --args \(argString)"
+    }
+
+    private func openAppCommand(
+        appName: String,
+        arguments: [String],
+        openNewInstance: Bool = true,
+        usesArgs: Bool = true
+    ) -> String {
+        let argString = arguments.map { shellQuoted($0) }.joined(separator: " ")
+        let newInstanceFlag = openNewInstance ? "-n " : ""
+
+        if usesArgs {
+            return "open \(newInstanceFlag)-a \(shellQuoted(appName)) --args \(argString)"
+        }
+
+        return "open \(newInstanceFlag)-a \(shellQuoted(appName)) \(argString)"
     }
 
     private func shellQuoted(_ value: String) -> String {

@@ -151,14 +151,44 @@ final class AppState: ObservableObject {
                 using: settings.terminalApp
             )
 
-            // Refresh repositories list
-            loadRepositories()
+            // Refresh worktrees for the current repo without reloading the whole list
+            let repoWorktrees = try await gitService.listWorktrees(at: repository.path)
+            let nonMainWorktrees = repoWorktrees.filter { !$0.isMain }
+            worktrees[repository.id] = nonMainWorktrees
 
         } catch {
             handleError(error)
             return false
         }
         self.featureName = ""
+        return true
+    }
+
+    func deleteWorktree(
+        _ worktree: Worktree,
+        from repository: Repository,
+        deleteBranch: Bool
+    ) async -> Bool {
+        errorMessage = nil
+
+        guard repository.isGitRepository else {
+            handleError(GitError.notAGitRepository)
+            return false
+        }
+
+        do {
+            try await gitService.removeWorktree(
+                at: repository.path,
+                worktree: worktree,
+                deleteBranch: deleteBranch
+            )
+            let repoWorktrees = try await gitService.listWorktrees(at: repository.path)
+            let nonMainWorktrees = repoWorktrees.filter { !$0.isMain }
+            worktrees[repository.id] = nonMainWorktrees
+        } catch {
+            handleError(error)
+            return false
+        }
         return true
     }
 

@@ -7,53 +7,74 @@ struct RepoMenuView: View {
     @ObservedObject var appState: AppState
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
+    private let headerTitleSize: CGFloat = 15
+    private let headerSubtitleSize: CGFloat = 11
+    private let searchFontSize: CGFloat = 13
+    private let headerIconSize: CGFloat = 28
+    @State private var deleteTarget: WorktreeDeleteTarget?
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        ZStack {
+            VStack(spacing: 0) {
+                header
 
-            Divider()
+                Divider()
 
-            // Scrollable repo list
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    contentRows
+                // Scrollable repo list
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        contentRows
+                    }
+                    .padding(.vertical, 8)
                 }
-                .padding(.vertical, 8)
+                .frame(maxHeight: 460)
+
+                Divider()
+                    .padding(.top, 4)
+
+                // Footer buttons
+                HStack(spacing: 16) {
+                    Button(action: {
+                        NSApplication.shared.activate(ignoringOtherApps: true)
+                        openWindow(id: "settings")
+                        dismiss()
+                    }) {
+                        Image(systemName: "gear")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Settings")
+
+                    Spacer()
+
+                    Button("Quit") {
+                        NSApplication.shared.terminate(nil)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
-            .frame(maxHeight: 400)
-
-            Divider()
-                .padding(.top, 4)
-
-            // Footer buttons
-            HStack(spacing: 16) {
-                Button(action: {
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                    openWindow(id: "settings")
-                    dismiss()
-                }) {
-                    Image(systemName: "gear")
-                }
-                .buttonStyle(.plain)
-                .help("Settings")
-
-                Spacer()
-
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+            .frame(width: 320)
+            .alert("Error", isPresented: $appState.showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(appState.errorMessage ?? "Something went wrong.")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-        .frame(width: 320)
-        .alert("Error", isPresented: $appState.showError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(appState.errorMessage ?? "Something went wrong.")
+
+            if let deleteTarget = deleteTarget {
+                DeleteWorktreeModal(
+                    worktree: deleteTarget.worktree,
+                    repository: deleteTarget.repository,
+                    appState: appState
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        self.deleteTarget = nil
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
     }
 
@@ -63,13 +84,13 @@ struct RepoMenuView: View {
                 Image("MenuBarIcon")
                     .renderingMode(.template)
                     .resizable()
-                    .frame(width: 14, height: 14)
+                    .frame(width: headerIconSize, height: headerIconSize)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Trees")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: headerTitleSize, weight: .semibold))
                     Text("\(appState.filteredRepositories.count) folders")
-                        .font(.system(size: 10))
+                        .font(.system(size: headerSubtitleSize))
                         .foregroundStyle(.secondary)
                 }
 
@@ -87,7 +108,7 @@ struct RepoMenuView: View {
                     .foregroundStyle(.secondary)
                 TextField("Search folders", text: $appState.searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(.system(size: searchFontSize))
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 8)
@@ -112,7 +133,18 @@ struct RepoMenuView: View {
                     .padding(.vertical, 18)
             } else {
                 ForEach(appState.filteredRepositories) { repo in
-                    RepoRowView(repo: repo, appState: appState)
+                    RepoRowView(
+                        repo: repo,
+                        appState: appState,
+                        onDeleteRequest: { worktree, repository in
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                deleteTarget = WorktreeDeleteTarget(
+                                    worktree: worktree,
+                                    repository: repository
+                                )
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -124,6 +156,7 @@ struct RepoMenuView: View {
 struct RepoRowView: View {
     let repo: Repository
     @ObservedObject var appState: AppState
+    let onDeleteRequest: (Worktree, Repository) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var isHovering = false
     @State private var isExpanded = false
@@ -133,6 +166,8 @@ struct RepoRowView: View {
     @State private var showCreateField = false
     @FocusState private var isCreateFieldFocused: Bool
     private let actionIconSize: CGFloat = 14
+    private let repoIconSize: CGFloat = 12
+    private let repoNameSize: CGFloat = 13
 
     private var actionIconFont: Font {
         .system(size: actionIconSize, weight: .regular)
@@ -194,16 +229,16 @@ struct RepoRowView: View {
             HStack(spacing: 8) {
                 if repo.isGitRepository {
                     Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
-                        .font(.system(size: 11))
+                        .font(.system(size: repoIconSize))
                         .foregroundStyle(.secondary)
                 } else {
                     Image(systemName: "folder")
-                        .font(.system(size: 11))
+                        .font(.system(size: repoIconSize))
                         .foregroundStyle(.secondary)
                 }
 
                 Text(repo.name)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: repoNameSize, weight: .medium))
                     .lineLimit(1)
 
                 Spacer()
@@ -260,18 +295,19 @@ struct RepoRowView: View {
                     if showCreateField {
                         HStack(spacing: 8) {
                             Image(systemName: "plus")
-                                .font(.system(size: 11))
+                                .font(.system(size: repoNameSize))
                                 .foregroundStyle(.secondary)
 
-                        TextField("feature/my-branch", text: $newWorktreeName)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 11, weight: .medium))
-                            .disableAutocorrection(true)
-                            .lineLimit(1)
-                            .focused($isCreateFieldFocused)
-                            .onSubmit {
-                                submitCreateWorktree()
-                            }
+                            TextField("feature/my-branch", text: $newWorktreeName)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: repoNameSize, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .disableAutocorrection(true)
+                                .lineLimit(1)
+                                .focused($isCreateFieldFocused)
+                                .onSubmit {
+                                    submitCreateWorktree()
+                                }
                             .padding(.vertical, 4)
                             .padding(.horizontal, 6)
                             .background(
@@ -291,6 +327,7 @@ struct RepoRowView: View {
                                     submitCreateWorktree()
                                 }
                                 .buttonStyle(.plain)
+                                .font(.system(size: repoNameSize, weight: .medium))
                                 .keyboardShortcut(.defaultAction)
                                 .disabled(newWorktreeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             }
@@ -307,11 +344,11 @@ struct RepoRowView: View {
                         }) {
                             HStack(spacing: 8) {
                                 Image(systemName: "plus")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: repoNameSize))
                                     .foregroundStyle(.secondary)
 
                                 Text("Create Worktree...")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(.system(size: repoNameSize, weight: .medium))
                                     .foregroundStyle(.secondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -328,7 +365,13 @@ struct RepoRowView: View {
                         .opacity(showDetails ? 1 : 0)
 
                     ForEach(repoWorktrees) { worktree in
-                        WorktreeRowView(worktree: worktree, appState: appState)
+                        WorktreeRowView(
+                            worktree: worktree,
+                            repository: repo,
+                            appState: appState,
+                            textSize: repoNameSize,
+                            onDeleteRequest: onDeleteRequest
+                        )
                             .opacity(showDetails ? 1 : 0)
                     }
                 }
@@ -341,10 +384,13 @@ struct RepoRowView: View {
 
 struct WorktreeRowView: View {
     let worktree: Worktree
+    let repository: Repository
     @ObservedObject var appState: AppState
+    let textSize: CGFloat
+    let onDeleteRequest: (Worktree, Repository) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var isHovering = false
-    private let actionIconSize: CGFloat = 12
+    private let actionIconSize: CGFloat = 14
 
     private func actionSymbol(_ name: String) -> some View {
         Image(systemName: name)
@@ -355,59 +401,188 @@ struct WorktreeRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+        ZStack {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: textSize))
+                    .foregroundStyle(.secondary)
 
-            Text(worktree.name)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(1)
+                Text(worktree.name)
+                    .font(.system(size: textSize, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
 
-            Spacer()
+                Spacer()
 
-            if isHovering {
-                HStack(spacing: 10) {
-                    Button(action: {
-                        appState.openWorktreeInFinder(worktree)
-                        dismiss()
-                    }) {
-                        actionSymbol("folder")
+                if isHovering {
+                    HStack(spacing: 10) {
+                        Button(action: {
+                            appState.openWorktreeInFinder(worktree)
+                            dismiss()
+                        }) {
+                            actionSymbol("folder")
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open in Finder")
+
+                        Button(action: {
+                            appState.copyWorktreeURL(worktree)
+                            dismiss()
+                        }) {
+                            actionSymbol("doc.on.doc")
+                        }
+                        .buttonStyle(.plain)
+                        .help("Copy Path")
+
+                        Button(action: {
+                            appState.openWorktreeInTerminal(worktree)
+                            dismiss()
+                        }) {
+                            actionSymbol("terminal")
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open in Terminal")
+
+                        Button(action: {
+                            onDeleteRequest(worktree, repository)
+                        }) {
+                            actionSymbol("xmark.circle")
+                                .foregroundStyle(.red)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Delete Worktree")
                     }
-                    .buttonStyle(.plain)
-                    .help("Open in Finder")
-
-                    Button(action: {
-                        appState.copyWorktreeURL(worktree)
-                        dismiss()
-                    }) {
-                        actionSymbol("doc.on.doc")
-                    }
-                    .buttonStyle(.plain)
-                    .help("Copy Path")
-
-                    Button(action: {
-                        appState.openWorktreeInTerminal(worktree)
-                        dismiss()
-                    }) {
-                        actionSymbol("terminal")
-                    }
-                    .buttonStyle(.plain)
-                    .help("Open in Terminal")
                 }
             }
+            .padding(.leading, 24)
+            .padding(.trailing, 12)
+            .frame(height: 24)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovering ? Color.primary.opacity(0.06) : Color.clear)
+            )
+            .padding(.leading, 5)
+            .padding(.trailing, 2)
         }
-        .padding(.horizontal, 24)
-        .frame(height: 24)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isHovering ? Color.primary.opacity(0.06) : Color.clear)
-        )
-        .padding(.horizontal, 5)
         .contentShape(Rectangle())
         .onHover { hovering in
             isHovering = hovering
         }
+    }
+}
+
+private struct WorktreeDeleteTarget {
+    let worktree: Worktree
+    let repository: Repository
+}
+
+private struct DeleteWorktreeModal: View {
+    let worktree: Worktree
+    let repository: Repository
+    @ObservedObject var appState: AppState
+    let onDismiss: () -> Void
+    private let popoverWidth: CGFloat = 320
+    private let buttonFontSize: CGFloat = 14
+
+    private func handleDelete(deleteBranch: Bool) {
+        onDismiss()
+        Task {
+            _ = await appState.deleteWorktree(
+                worktree,
+                from: repository,
+                deleteBranch: deleteBranch
+            )
+        }
+    }
+
+    var body: some View {
+        let includesBranchDelete = worktree.branch != "detached"
+        let labels = includesBranchDelete
+            ? ["Remove Worktree", "Remove + Delete Branch", "Cancel"]
+            : ["Remove Worktree", "Cancel"]
+        let buttonFont = NSFont.systemFont(ofSize: buttonFontSize, weight: .semibold)
+        let maxLabelWidth = labels.map {
+            ($0 as NSString).size(withAttributes: [.font: buttonFont]).width
+        }.max() ?? 0
+        let maxButtonWidth = popoverWidth - 40
+        let textWidth = min(maxLabelWidth, max(maxButtonWidth, 0))
+
+        return ZStack {
+            Color.black.opacity(0.18)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onDismiss()
+                }
+
+            VStack(alignment: .trailing, spacing: 6) {
+                Button {
+                    handleDelete(deleteBranch: false)
+                } label: {
+                    Text("Remove Worktree")
+                        .font(.system(size: buttonFontSize, weight: .semibold))
+                        .foregroundStyle(Color.red)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .frame(width: textWidth)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.red.opacity(0.14))
+                        )
+                }
+                .buttonStyle(.plain)
+
+                if includesBranchDelete {
+                    Button {
+                        handleDelete(deleteBranch: true)
+                    } label: {
+                        Text("Remove + Delete Branch")
+                            .font(.system(size: buttonFontSize, weight: .semibold))
+                            .foregroundStyle(Color.red)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .frame(width: textWidth)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.red.opacity(0.14))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Button {
+                    onDismiss()
+                } label: {
+                    Text("Cancel")
+                        .font(.system(size: buttonFontSize, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .frame(width: textWidth)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.2))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(8)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(NSColor.windowBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

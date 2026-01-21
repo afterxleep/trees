@@ -132,6 +132,39 @@ final class GitService: GitServiceProtocol {
         return worktrees
     }
 
+    func removeWorktree(
+        at repoPath: URL,
+        worktree: Worktree,
+        deleteBranch: Bool
+    ) async throws {
+        let gitPath = repoPath.appendingPathComponent(".git")
+        guard fileManager.fileExists(atPath: gitPath.path) else {
+            throw GitError.notAGitRepository
+        }
+
+        let removeArguments = ["worktree", "remove", "--force", worktree.path.path]
+
+        let removeResult = try await runGitCommand(
+            removeArguments,
+            in: repoPath
+        )
+
+        if removeResult.exitCode != 0 {
+            throw GitError.worktreeRemovalFailed(removeResult.stderr)
+        }
+
+        guard deleteBranch, worktree.branch != "detached" else { return }
+
+        let branchResult = try await runGitCommand(
+            ["branch", "-d", worktree.branch],
+            in: repoPath
+        )
+
+        if branchResult.exitCode != 0 {
+            throw GitError.branchDeletionFailed(worktree.branch, branchResult.stderr)
+        }
+    }
+
     // MARK: - Private
 
     private struct CommandResult {

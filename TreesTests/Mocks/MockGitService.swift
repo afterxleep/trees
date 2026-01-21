@@ -5,12 +5,14 @@ final class MockGitService: GitServiceProtocol {
     var pullMainError: GitError?
     var createWorktreeError: GitError?
     var listWorktreesError: GitError?
+    var removeWorktreeError: GitError?
     var createdWorktreePath: URL?
     var worktreesToReturn: [Worktree] = []
 
     var pullMainCalledWith: URL?
     var createWorktreeCalledWith: (repoPath: URL, featureName: String)?
     var listWorktreesCalledWith: URL?
+    var removeWorktreeCalledWith: (repoPath: URL, worktree: Worktree, deleteBranch: Bool)?
 
     func pullMain(at repoPath: URL) async throws {
         pullMainCalledWith = repoPath
@@ -35,5 +37,16 @@ final class MockGitService: GitServiceProtocol {
             throw error
         }
         return worktreesToReturn
+    }
+
+    func removeWorktree(
+        at repoPath: URL,
+        worktree: Worktree,
+        deleteBranch: Bool
+    ) async throws {
+        removeWorktreeCalledWith = (repoPath, worktree, deleteBranch)
+        if let error = removeWorktreeError {
+            throw error
+        }
     }
 }

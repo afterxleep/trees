@@ -27,11 +27,12 @@ final class TerminalServiceTests: XCTestCase {
             command: command
         )
 
-        XCTAssertTrue(script.contains("com.mitchellh.ghostty"))
-        XCTAssertTrue(script.contains("open -b com.mitchellh.ghostty"))
-        XCTAssertFalse(script.contains("open -n -b com.mitchellh.ghostty"))
+        XCTAssertTrue(script.contains("GhosTTY"))
+        XCTAssertTrue(script.contains("open -a"))
+        XCTAssertFalse(script.contains("open -n -a"))
         XCTAssertTrue(script.contains("/Users/test/project"))
         XCTAssertTrue(script.contains("cld"))
+        XCTAssertTrue(script.contains("+new-window"))
     }
 
     func testBuildCommand_terminal() {

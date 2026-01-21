@@ -12,10 +12,12 @@ enum GitError: Error, LocalizedError {
     case pullDiverged
     case pullUnrelatedHistories
     case worktreeCreationFailed(String)
+    case worktreeRemovalFailed(String)
     case invalidBranchName(String)
     case baseBranchNotFound(String)
     case notAGitRepository
     case branchAlreadyExists(String)
+    case branchDeletionFailed(String, String)
 
     var errorDescription: String? {
         switch self {
@@ -57,6 +59,8 @@ enum GitError: Error, LocalizedError {
             return "Cannot pull because the histories are unrelated. Check the remote branch or merge manually."
         case .worktreeCreationFailed(let message):
             return "Failed to create worktree: \(message)"
+        case .worktreeRemovalFailed(let message):
+            return "Failed to remove worktree: \(message)"
         case .invalidBranchName(let branch):
             return "Branch name '\(branch)' is invalid. Use a valid branch name and try again."
         case .baseBranchNotFound(let branch):
@@ -65,6 +69,8 @@ enum GitError: Error, LocalizedError {
             return "Not a git repository"
         case .branchAlreadyExists(let branch):
             return "Branch '\(branch)' already exists"
+        case .branchDeletionFailed(let branch, let message):
+            return "Failed to delete branch '\(branch)': \(message)"
         }
     }
 }
@@ -89,4 +95,16 @@ protocol GitServiceProtocol {
     /// - Returns: Array of Worktree objects
     /// - Throws: GitError if listing fails
     func listWorktrees(at repoPath: URL) async throws -> [Worktree]
+
+    /// Removes a worktree and optionally deletes its branch
+    /// - Parameters:
+    ///   - repoPath: Path to the git repository
+    ///   - worktree: Worktree to remove
+    ///   - deleteBranch: Whether to delete the worktree branch
+    /// - Throws: GitError if removal fails
+    func removeWorktree(
+        at repoPath: URL,
+        worktree: Worktree,
+        deleteBranch: Bool
+    ) async throws
 }
